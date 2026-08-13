@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 18px; color: #202124; }
+    .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 14px; }
+    .meta { display: grid; grid-template-columns: 180px 1fr; gap: 12px; align-items: end; margin-bottom: 12px; }
+    label { display: grid; gap: 5px; font-size: 13px; font-weight: 600; }
+    select, input, textarea, button { font: inherit; }
+    select, input[type="date"] { width: 100%; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; }
+    .active-field { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
+    textarea { width: 100%; height: 500px; resize: vertical; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; }
+    button { padding: 8px 12px; border: 1px solid #dadce0; border-radius: 4px; background: #fff; cursor: pointer; }
+    button.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+    button:disabled { opacity: .55; cursor: default; }
+    .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+    #status { font-size: 13px; min-height: 18px; }
+    .success { color: #137333; }
+    .error { color: #b3261e; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <select id="challenge-select" aria-label="Challenge"></select>
+    <button id="new-button" type="button">New</button>
+    <button id="reload-button" type="button">Reload</button>
+  </div>
+
+  <div class="meta">
+    <label>
+      Date
+      <input id="date-input" type="date">
+    </label>
+    <label class="active-field">
+      <input id="active-input" type="checkbox">
+      Active
+    </label>
+  </div>
+
+  <label>
+    Challenge JSON
+    <textarea id="json-input" spellcheck="false"></textarea>
+  </label>
+
+  <div class="footer">
+    <div id="status"></div>
+    <div>
+      <button id="validate-button" type="button">Validate</button>
+      <button id="save-button" class="primary" type="button">Save</button>
+    </div>
+  </div>
+
+  <script>
+    let rows = [];
+    let templateJson = '';
+    let currentRowNumber = 0;
+
+    const select = document.getElementById('challenge-select');
+    const dateInput = document.getElementById('date-input');
+    const activeInput = document.getElementById('active-input');
+    const jsonInput = document.getElementById('json-input');
+    const status = document.getElementById('status');
+    const saveButton = document.getElementById('save-button');
+
+    function setStatus(message, type) {
+      status.textContent = message || '';
+      status.className = type || '';
+    }
+
+    function setBusy(busy) {
+      saveButton.disabled = busy;
+      document.getElementById('validate-button').disabled = busy;
+      document.getElementById('reload-button').disabled = busy;
+      document.getElementById('new-button').disabled = busy;
+    }
+
+    function formatJson(text) {
+      try {
+        return JSON.stringify(JSON.parse(text), null, 2);
+      } catch (error) {
+        return text;
+      }
+    }
+
+    function renderSelect() {
+      select.innerHTML = '<option value="">New challenge</option>' + rows.map(row => {
+        const label = row.title || row.label || row.challenge_key || `Row ${row.row_number}`;
+        const date = row.date ? ` | ${row.date}` : '';
+        return `<option value="${row.row_number}">${escapeHtml(label + date)}</option>`;
+      }).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function loadRow(rowNumber) {
+      const row = rows.find(item => item.row_number === Number(rowNumber));
+
+      if (!row) {
+        currentRowNumber = 0;
+        dateInput.value = '';
+        activeInput.checked = true;
+        jsonInput.value = templateJson;
+        select.value = '';
+        setStatus('New challenge.', '');
+        return;
+      }
+
+      currentRowNumber = row.row_number;
+      dateInput.value = row.date || '';
+      activeInput.checked = row.active;
+      jsonInput.value = formatJson(row.challenge_json);
+      select.value = String(row.row_number);
+      setStatus(`Editing row ${row.row_number}.`, '');
+    }
+
+    function loadData(preferredRowNumber) {
+      setBusy(true);
+      setStatus('Loading...', '');
+
+      google.script.run
+        .withSuccessHandler(data => {
+          rows = data.rows || [];
+          templateJson = data.template_json || '{}';
+          renderSelect();
+          setBusy(false);
+          loadRow(preferredRowNumber || 0);
+        })
+        .withFailureHandler(error => {
+          setBusy(false);
+          setStatus(error.message || String(error), 'error');
+        })
+        .getChallengeEditorData();
+    }
+
+    function validateJson() {
+      setBusy(true);
+      setStatus('Validating...', '');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          setBusy(false);
+          if (!result.success) {
+            setStatus(result.error, 'error');
+            return;
+          }
+
+          jsonInput.value = formatJson(jsonInput.value);
+          setStatus(`Valid: ${result.summary.challenge_id} v${result.summary.version}.`, 'success');
+        })
+        .withFailureHandler(error => {
+          setBusy(false);
+          setStatus(error.message || String(error), 'error');
+        })
+        .validateChallengeJson(jsonInput.value);
+    }
+
+    function saveChallenge() {
+      setBusy(true);
+      setStatus('Saving...', '');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          setStatus('Saved.', 'success');
+          loadData(result.row_number);
+        })
+        .withFailureHandler(error => {
+          setBusy(false);
+          setStatus(error.message || String(error), 'error');
+        })
+        .saveChallengeFromEditor({
+          row_number: currentRowNumber,
+          date: dateInput.value,
+          active: activeInput.checked,
+          challenge_json: jsonInput.value
+        });
+    }
+
+    select.addEventListener('change', () => loadRow(select.value));
+    document.getElementById('new-button').addEventListener('click', () => loadRow(0));
+    document.getElementById('reload-button').addEventListener('click', () => loadData(currentRowNumber));
+    document.getElementById('validate-button').addEventListener('click', validateJson);
+    document.getElementById('save-button').addEventListener('click', saveChallenge);
+
+    loadData(0);
+  </script>
+</body>
+</html>

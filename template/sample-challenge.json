@@ -1,0 +1,120 @@
+{
+  "id": "web-client-server-fetch",
+  "label": "Cliente, servidor e fetch",
+  "challenge": {
+    "challenge_id": "web-fundamentos-2026-001",
+    "version": 1,
+    "title": "O que acontece após o clique?",
+    "topics": [
+      "desenvolvimento web",
+      "cliente e servidor",
+      "HTTP",
+      "fetch",
+      "JSON",
+      "DOM"
+    ],
+    "difficulty": "iniciante",
+    "intro": [
+      {
+        "type": "markdown",
+        "content": "Uma aplicação web normalmente distribui seu funcionamento entre o navegador e algum serviço acessível pela rede."
+      },
+      {
+        "type": "markdown",
+        "content": "O navegador pode executar JavaScript, responder às ações do usuário e modificar os elementos da página. Quando precisa de informações externas, ele pode enviar uma requisição para um servidor."
+      },
+      {
+        "type": "markdown",
+        "content": "Observe o código abaixo e identifique onde cada operação acontece."
+      }
+    ],
+    "prompt": [
+      {
+        "type": "code",
+        "language": "html",
+        "content": "<button id=\"load\">Carregar mensagem</button>\n<p id=\"result\"></p>\n\n<script>\n  document.querySelector(\"#load\").addEventListener(\"click\", async () => {\n    const response = await fetch(\"/api/message\");\n    const data = await response.json();\n\n    document.querySelector(\"#result\").textContent = data.message;\n  });\n</script>"
+      },
+      {
+        "type": "markdown",
+        "content": "Considere que o endereço `/api/message` responde com o seguinte conteúdo:"
+      },
+      {
+        "type": "code",
+        "language": "json",
+        "content": "{\n  \"message\": \"Olá, navegador!\"\n}"
+      },
+      {
+        "type": "question",
+        "content": "Qual alternativa descreve corretamente o que acontece depois que o usuário clica no botão?"
+      }
+    ],
+    "response": {
+      "type": "mixed",
+      "fields": [
+        {
+          "id": "choice",
+          "type": "single_choice",
+          "label": "Escolha a melhor resposta",
+          "required": true,
+          "correct_option_id": "c",
+          "options": [
+            {
+              "id": "a",
+              "label": "O navegador abre um arquivo /api/message e insere todo o seu conteúdo dentro do parágrafo."
+            },
+            {
+              "id": "b",
+              "label": "O JavaScript é executado no servidor, que modifica remotamente o elemento <p> da página."
+            },
+            {
+              "id": "c",
+              "label": "O JavaScript é executado no navegador, envia uma requisição ao servidor, recebe dados em JSON e atualiza o elemento <p>."
+            },
+            {
+              "id": "d",
+              "label": "Toda a página HTML precisa ser carregada novamente antes que a mensagem possa aparecer."
+            }
+          ]
+        },
+        {
+          "id": "explanation",
+          "type": "open_text",
+          "label": "Como você pensou sobre a resposta?",
+          "required": true,
+          "min_length": 20,
+          "placeholder": "Explique o que pensou, indique sua confiança ou dúvidas..."
+        }
+      ]
+    }
+  },
+  "feedback": {
+    "messages": [
+      "Resposta correta: C. O evento de clique, a chamada fetch e a alteração do elemento da página são executados pelo JavaScript no navegador.",
+      "A chamada fetch envia uma requisição HTTP para /api/message. O servidor responde com dados em JSON, e o navegador usa esses dados para atualizar o DOM (Document Object Model - árvore que representa os elementos de uma página web)."
+    ],
+    "after_submission": [
+      {
+        "type": "markdown",
+        "content": "O código executado no navegador não acessa diretamente os dados internos do servidor. Ele envia uma requisição para um endereço, espera uma resposta e processa o conteúdo recebido."
+      },
+      {
+        "type": "code",
+        "language": "javascript",
+        "content": "const response = await fetch(\"/api/message\");\nconst data = await response.json();"
+      },
+      {
+        "type": "markdown",
+        "content": "Nesse trecho, `fetch` inicia a comunicação com o servidor. O método `response.json()` interpreta o corpo da resposta como JSON."
+      },
+      {
+        "type": "code",
+        "language": "javascript",
+        "content": "document.querySelector(\"#result\").textContent = data.message;"
+      },
+      {
+        "type": "markdown",
+        "content": "A atualização do elemento `<p>` acontece no navegador. O servidor fornece os dados, mas não manipula diretamente o DOM da página. "
+      }
+    ]
+  }
+}

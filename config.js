@@ -1,0 +1,2 @@
+export const GAS_WEB_APP_URL = "PASTE_DEPLOYED_GAS_WEB_APP_URL_HERE";
+export const FRONTEND_VERSION = "1.1.0";

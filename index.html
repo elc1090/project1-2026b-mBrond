@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Desafio do Dia - Desenvolvimento de Software para Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div class="brand-mark" aria-hidden="true">
+        <span></span>
+        <span></span>
+      </div>
+
+      <p class="eyebrow">Desafio do Dia - Desenvolvimento de Software para Web</p>
+      <h1>Desafio do Dia</h1>
+      <p class="subtitle">
+        Um desafio rápido. Um aprendizado que permanece.
+      </p>
+    </section>
+
+    <section class="student-card">
+      <div class="section-heading">
+        <span class="step-badge">1</span>
+        <div>
+          <h2>Escolha seu nome</h2>
+          <p>Selecione ou digite seu nome.</p>
+        </div>
+      </div>
+
+      <label for="student-input">Nome do estudante</label>
+      <input id="student-input" type="text" autocomplete="off" placeholder="Digite seu nome...">
+      <ul id="student-suggestions" class="suggestions"></ul>
+      <p id="student-status" class="hint"></p>
+    </section>
+
+    <section id="challenge" class="challenge-card"></section>
+
+    <section class="answer-card">
+      <div class="section-heading">
+        <span class="step-badge">2</span>
+        <div>
+          <h2>Sua resposta</h2>
+          <p>Responda sem medo de errar!</p>
+        </div>
+      </div>
+
+      <form id="response-form"></form>
+      <div id="form-message" class="form-message hidden" role="status" aria-live="polite"></div>
+      <button id="submit-button" type="button">Enviar</button>
+    </section>
+
+    <section id="feedback" class="feedback-card hidden"></section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
