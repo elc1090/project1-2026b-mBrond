@@ -34,14 +34,26 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function getApiUrl(action) {
+function getApiUrl(action, params = {}) {
   const url = new URL(GAS_WEB_APP_URL);
   url.searchParams.set("action", action);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+  }
+
   return url.toString();
 }
 
 function isApiConfigured() {
   return GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("PASTE_DEPLOYED_GAS_WEB_APP_URL_HERE");
+}
+
+function getFormattedSelectedDate() {
+  const ano = selectedDate.getFullYear();
+  const mes = String(selectedDate.getMonth() + 1).padStart(2, "0");
+  const dia = String(selectedDate.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
 }
 
 async function apiGetBootstrap() {
@@ -50,6 +62,26 @@ async function apiGetBootstrap() {
   }
 
   const response = await fetch(getApiUrl("getBootstrap"));
+
+  if (!response.ok) {
+    throw new Error("Não foi possível carregar os dados iniciais.");
+  }
+
+  const data = await response.json();
+
+  if (data.success === false) {
+    throw new Error(data.error || "O backend retornou erro ao carregar os dados iniciais.");
+  }
+
+  return data;
+}
+
+async function apiGetBootstrapDated(dateString =null) {
+  if (!isApiConfigured()) {
+    throw new Error("Configure a URL do backend em config.js.");
+  }
+
+  const response = await fetch(getApiUrl("getBootstrap", { date: dateString }));
 
   if (!response.ok) {
     throw new Error("Não foi possível carregar os dados iniciais.");
@@ -460,6 +492,29 @@ async function handleSubmit() {
   }
 }
 
+async function loadChallengeForSelectedDate(){
+  const formattedDate = getFormattedSelectedDate();
+  renderSelectedDate();
+
+  try {
+    const bootstrap = await apiGetBootstrapDated(formattedDate);
+    state.app = bootstrap.app ?? state.app;
+    state.students = bootstrap.students ?? [];
+    state.currentChallenge = bootstrap.current_challenge ?? null;
+
+    renderChallenge();
+    renderResponseForm();
+    resetResponseState();
+  } catch(error){
+    console.error(error);
+    challengeEl.innerHTML = `
+      <p class="error">${escapeHtml(error.message || "Não foi possível carregar o desafio.")}</p>
+    `;
+    responseForm.innerHTML = "";
+    submitButton.disabled = true;
+  }
+}
+
 async function initApp() {
   submitButton.disabled = true;
   challengeEl.innerHTML = `<p class="hint">Carregando desafio...</p>`;
@@ -485,7 +540,7 @@ async function initApp() {
 }
 
 function renderSelectedDate() {
-  const date = selectedDate.toISOString().slice(0, 10);
+  const date = getFormattedSelectedDate();
   challengeDate.dateTime = date;
   challengeDate.textContent = date;
 }
@@ -518,13 +573,14 @@ submitButton.addEventListener("click", handleSubmit);
 
 previousDayButton.addEventListener("click", () => {
   selectedDate.setDate(selectedDate.getDate() - 1);
-  renderSelectedDate();
+  loadChallengeForSelectedDate();
 });
 
 nextDayButton.addEventListener("click", () => {
   selectedDate.setDate(selectedDate.getDate() + 1);
-  renderSelectedDate();
+  loadChallengeForSelectedDate();
 });
 
-renderSelectedDate();
-initApp();
+loadChallengeForSelectedDate();
+//renderSelectedDate();
+//initApp();

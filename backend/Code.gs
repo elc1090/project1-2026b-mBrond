@@ -67,16 +67,18 @@ function handleRequest_(e, isPost) {
       return jsonResponse_({ success: false, error: `Unsupported POST action: ${action}` });
     }
 
+    const date = e && e.parameter && e.parameter.date ? String(e.parameter.date).trim() : null;
+
     switch (action) {
       case 'getBootstrap':
       case 'bootstrap':
-        return jsonResponse_(getBootstrap_());
+        return jsonResponse_(getBootstrap_(date));
       case 'getConfig':
         return jsonResponse_({ success: true, app: getConfig_() });
       case 'getStudents':
         return jsonResponse_({ success: true, students: getStudents_() });
       case 'getActiveChallenge':
-        return jsonResponse_({ success: true, current_challenge: getActiveChallenge_() });
+        return jsonResponse_({ success: true, current_challenge: getActiveChallenge_(date) });
       default:
         return jsonResponse_({ success: false, error: `Unsupported GET action: ${action}` });
     }
@@ -100,8 +102,8 @@ function getAction_(e, body) {
   return '';
 }
 
-function getBootstrap_() {
-  const activeResult = getActiveChallengeResult_();
+function getBootstrap_(date) {
+  const activeResult = getActiveChallengeResult_(date);
 
   return {
     success: true,
@@ -143,11 +145,11 @@ function getStudents_() {
     }));
 }
 
-function getActiveChallenge_() {
-  return getActiveChallengeResult_().challenge;
+function getActiveChallenge_(date) {
+  return getActiveChallengeResult_(date).challenge;
 }
 
-function getActiveChallengeResult_() {
+function getActiveChallengeResult_(date) {
   const sheet = getSheetByName_(SHEET_NAMES.CHALLENGES);
   if (!sheet) {
     return { challenge: null, message: 'Challenges sheet not found.' };
@@ -161,6 +163,9 @@ function getActiveChallengeResult_() {
   const today = Utilities.formatDate(new Date(), timezone, 'yyyy-MM-dd');
   const activeRows = rows.filter(row => isTruthy_(row.active));
 
+  const queryDate = date || today
+
+
   if (activeRows.length === 0) {
     return { challenge: null, message: 'No active challenge configured.' };
   }
@@ -171,12 +176,12 @@ function getActiveChallengeResult_() {
   if (selectionMode === 'first_active') {
     match = activeRows[0];
   } else {
-    match = activeRows.find(row => normalizeDate_(row.date, timezone) === today) || null;
+    match = activeRows.find(row => normalizeDate_(row.date, timezone) === queryDate) || null;
 
     if (!match && allowUndatedFallback) {
       match = activeRows.find(row => !normalizeDate_(row.date, timezone)) || null;
       if (match) {
-        message = 'No challenge matched today; using an undated active challenge as fallback.';
+        message = 'No challenge matched for the selected day; using an undated active challenge as fallback.';
       }
     }
 
