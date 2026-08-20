@@ -688,3 +688,44 @@ code {
 .hidden {
   display: none;
 }
+
+.challenge-date-nav {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 360px;
+      margin-top: 28px;
+      padding: 8px;
+      border: 2px solid rgba(245, 245, 242, 0.35);
+      border-radius: 999px;
+      background: rgba(17, 17, 17, 0.55);
+}
+
+.challenge-date-nav time {
+  flex: 1;
+  text-align: center;
+  color: var(--cream);
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.date-arrow {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--black);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.date-arrow:hover,
+.date-arrow:focus-visible {
+  background: var(--purple);
+  color: var(--cream);
+}

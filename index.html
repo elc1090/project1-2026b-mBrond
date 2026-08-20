@@ -5,6 +5,9 @@
   <title>Desafio do Dia - Desenvolvimento de Software para Web</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="./style.css">
+  <style>
+    
+  </style>
 </head>
 <body>
   <main class="app-shell">
@@ -19,6 +22,12 @@
       <p class="subtitle">
         Um desafio rápido. Um aprendizado que permanece.
       </p>
+
+      <div class="challenge-date-nav" aria-label="Navegação entre os dias">
+        <button type="button" class="date-arrow" id="previous-day" aria-label="Dia anterior">&#8592;</button>
+        <time id="challenge-date" datetime=""></time>
+        <button type="button" class="date-arrow" id="next-day" aria-label="Próximo dia">&#8594;</button>
+      </div>
     </section>
 
     <section class="student-card">

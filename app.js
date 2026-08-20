@@ -20,6 +20,10 @@ const responseForm = document.querySelector("#response-form");
 const submitButton = document.querySelector("#submit-button");
 const feedbackEl = document.querySelector("#feedback");
 const formMessageEl = document.querySelector("#form-message");
+const challengeDate = document.querySelector("#challenge-date");
+const previousDayButton = document.querySelector("#previous-day");
+const nextDayButton = document.querySelector("#next-day");
+const selectedDate = new Date();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -480,6 +484,13 @@ async function initApp() {
   }
 }
 
+function renderSelectedDate() {
+  const date = selectedDate.toISOString().slice(0, 10);
+  challengeDate.dateTime = date;
+  challengeDate.textContent = date;
+}
+
+
 suggestionsEl.addEventListener("click", event => {
   const button = event.target.closest("button[data-student-id]");
   if (!button) return;
@@ -505,4 +516,15 @@ studentInput.addEventListener("input", () => {
 responseForm.addEventListener("input", clearFormMessage);
 submitButton.addEventListener("click", handleSubmit);
 
+previousDayButton.addEventListener("click", () => {
+  selectedDate.setDate(selectedDate.getDate() - 1);
+  renderSelectedDate();
+});
+
+nextDayButton.addEventListener("click", () => {
+  selectedDate.setDate(selectedDate.getDate() + 1);
+  renderSelectedDate();
+});
+
+renderSelectedDate();
 initApp();

@@ -25,3 +25,7 @@ A planilha possui quatro abas: `Config`, `Students`, `Challenges` e `Responses`.
 ## Desenvolvimento
 
 A requisição principal usada pelo frontend é `getBootstrap`; o envio de respostas usa `submitResponse`. A planilha é a fonte de dados do backend.
+
+## Demanda de Implementação
+
+Usuário conseguir visualizar e completar desafios do dia de dias anteriores, clicando em setinhas para o lado no header do site para navegar entre os dias.
