@@ -112,6 +112,7 @@ function getBootstrap_(date) {
     current_challenge: activeResult.challenge,
     current_challenge_key: activeResult.challenge ? activeResult.challenge.id : '',
     message: activeResult.message || '',
+    avaible_dates: getAvaibleChallengeDates_(),
   };
 }
 
@@ -188,7 +189,7 @@ function getActiveChallengeResult_(date) {
     if (!match) {
       return {
         challenge: null,
-        message: `No active challenge found for today (${today}).`,
+        message: `No active challenge found for ${queryDate}.`,
       };
     }
   }
@@ -680,4 +681,24 @@ function jsonResponse_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getAvaibleChallengeDates_(){
+  const sheet = getSheetByName_(SHEET_NAMES.CHALLENGES);
+  if (!sheet) return [];
+
+  const rows = getSheetData_(sheet);
+  const config = getConfig_();
+  const timezone = config.timezone || 'America/Sao_Paulo';
+
+  const dates = new Set();
+
+  rows.forEach(row =>{
+    if (isTruthy_(row.active) && row.date){
+      const formattedDate = normalizeDate_(row.date, timezone);
+      dates.add(formattedDate);
+    }
+  });
+
+  return Array.from(dates).sort();
 }
