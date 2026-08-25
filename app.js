@@ -9,7 +9,9 @@ const state = {
   selectedStudent: null,
   typedName: "",
   currentChallenge: null,
-  startedAt: Date.now()
+  startedAt: Date.now(),
+  currentDateIndex: -1,
+  availableDates: []
 };
 
 const studentInput = document.querySelector("#student-input");
@@ -23,7 +25,6 @@ const formMessageEl = document.querySelector("#form-message");
 const challengeDate = document.querySelector("#challenge-date");
 const previousDayButton = document.querySelector("#previous-day");
 const nextDayButton = document.querySelector("#next-day");
-const selectedDate = new Date();
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -49,13 +50,6 @@ function isApiConfigured() {
   return GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("PASTE_DEPLOYED_GAS_WEB_APP_URL_HERE");
 }
 
-function getFormattedSelectedDate() {
-  const ano = selectedDate.getFullYear();
-  const mes = String(selectedDate.getMonth() + 1).padStart(2, "0");
-  const dia = String(selectedDate.getDate()).padStart(2, "0");
-  return `${ano}-${mes}-${dia}`;
-}
-
 async function apiGetBootstrap() {
   if (!isApiConfigured()) {
     throw new Error("Configure a URL do backend em config.js.");
@@ -76,7 +70,7 @@ async function apiGetBootstrap() {
   return data;
 }
 
-async function apiGetBootstrapDated(dateString =null) {
+async function apiGetBootstrapDated(dateString = null) {
   if (!isApiConfigured()) {
     throw new Error("Configure a URL do backend em config.js.");
   }
@@ -492,38 +486,40 @@ async function handleSubmit() {
   }
 }
 
-async function loadChallengeForSelectedDate(){
-  const formattedDate = getFormattedSelectedDate();
-  renderSelectedDate();
+function updateNavigationState() {
+  const total = state.availableDates.length;
 
-  try {
-    const bootstrap = await apiGetBootstrapDated(formattedDate);
-    state.app = bootstrap.app ?? state.app;
-    state.students = bootstrap.students ?? [];
-    state.currentChallenge = bootstrap.current_challenge ?? null;
-
-    renderChallenge();
-    renderResponseForm();
-    resetResponseState();
-  } catch(error){
-    console.error(error);
-    challengeEl.innerHTML = `
-      <p class="error">${escapeHtml(error.message || "Não foi possível carregar o desafio.")}</p>
-    `;
-    responseForm.innerHTML = "";
-    submitButton.disabled = true;
+  if (total === 0) {
+    previousDayButton.disabled = true;
+    nextDayButton.disabled = true;
+    return;
   }
+
+  previousDayButton.disabled = state.currentDateIndex <= 0;
+  nextDayButton.disabled = state.currentDateIndex >= total - 1;
 }
 
-async function initApp() {
-  submitButton.disabled = true;
+function renderSelectedDate() {
+  const currentDate = state.availableDates[state.currentDateIndex];
+  if (!currentDate) return;
+
+  challengeDate.dateTime = currentDate;
+  challengeDate.textContent = currentDate;
+}
+
+async function loadChallengeForCurrentIndex() {
+  const targetDate = state.availableDates[state.currentDateIndex];
+  if (!targetDate) return;
+
+  renderSelectedDate();
+  updateNavigationState();
+
+  previousDayButton.disabled = true;
+  nextDayButton.disabled = true;
   challengeEl.innerHTML = `<p class="hint">Carregando desafio...</p>`;
 
   try {
-    const bootstrap = await apiGetBootstrap();
-
-    state.app = bootstrap.app ?? state.app;
-    state.students = bootstrap.students ?? [];
+    const bootstrap = await apiGetBootstrapDated(targetDate);
     state.currentChallenge = bootstrap.current_challenge ?? null;
 
     renderChallenge();
@@ -536,15 +532,61 @@ async function initApp() {
     `;
     responseForm.innerHTML = "";
     submitButton.disabled = true;
+  } finally {
+    updateNavigationState();
   }
 }
 
-function renderSelectedDate() {
-  const date = getFormattedSelectedDate();
-  challengeDate.dateTime = date;
-  challengeDate.textContent = date;
+function getTodayFormattedDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
+async function initApp() {
+  submitButton.disabled = true;
+  challengeEl.innerHTML = `<p class="hint">Carregando desafio...</p>`;
+
+  try {
+    const bootstrap = await apiGetBootstrap();
+
+    state.app = bootstrap.app ?? state.app;
+    state.students = bootstrap.students ?? [];
+    state.availableDates = bootstrap.avaible_dates ?? [];
+    state.currentChallenge = bootstrap.current_challenge ?? null;
+
+    const today = getTodayFormattedDate();
+
+    if (!state.availableDates.includes(today)) {
+      state.availableDates.push(today);
+      state.availableDates.sort();
+    }
+
+    const initialDate = state.currentChallenge?.date;
+    if (initialDate) {
+      state.currentDateIndex = state.availableDates.indexOf(initialDate);
+    }
+
+    if (state.currentDateIndex === -1 && state.availableDates.length > 0) {
+      state.currentDateIndex = state.availableDates.length - 1;
+    }
+
+    renderSelectedDate();
+    updateNavigationState();
+    renderChallenge();
+    renderResponseForm();
+    resetResponseState();
+  } catch (error) {
+    console.error(error);
+    challengeEl.innerHTML = `
+      <p class="error">${escapeHtml(error.message || "Não foi possível carregar o desafio.")}</p>
+    `;
+    responseForm.innerHTML = "";
+    submitButton.disabled = true;
+  }
+}
 
 suggestionsEl.addEventListener("click", event => {
   const button = event.target.closest("button[data-student-id]");
@@ -572,15 +614,17 @@ responseForm.addEventListener("input", clearFormMessage);
 submitButton.addEventListener("click", handleSubmit);
 
 previousDayButton.addEventListener("click", () => {
-  selectedDate.setDate(selectedDate.getDate() - 1);
-  loadChallengeForSelectedDate();
+  if (state.currentDateIndex > 0) {
+    state.currentDateIndex--;
+    loadChallengeForCurrentIndex();
+  }
 });
 
 nextDayButton.addEventListener("click", () => {
-  selectedDate.setDate(selectedDate.getDate() + 1);
-  loadChallengeForSelectedDate();
+  if (state.currentDateIndex < state.availableDates.length - 1) {
+    state.currentDateIndex++;
+    loadChallengeForCurrentIndex();
+  }
 });
 
-loadChallengeForSelectedDate();
-//renderSelectedDate();
-//initApp();
+initApp();
