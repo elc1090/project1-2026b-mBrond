@@ -518,6 +518,11 @@ async function loadChallengeForCurrentIndex() {
   nextDayButton.disabled = true;
   challengeEl.innerHTML = `<p class="hint">Carregando desafio...</p>`;
 
+  responseForm.innerHTML = "";
+  resetFeedback();
+  clearFormMessage();
+  submitButton.disabled = true;
+
   try {
     const bootstrap = await apiGetBootstrapDated(targetDate);
     state.currentChallenge = bootstrap.current_challenge ?? null;
